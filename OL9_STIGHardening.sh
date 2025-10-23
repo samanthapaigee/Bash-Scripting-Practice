@@ -22,6 +22,7 @@ backup_file /etc/sysctl.d
 cat <<EOF >> /etc/sysctl.d
 net.ipv4.conf.default.log_martians=1
 net.ipv4.conf.all.log_martians=1
+EOF
 
 
 echo "[+] Configuring networking settings"
@@ -43,9 +44,10 @@ backup_file /etc/ssh/sshd_config
 cat <<EOF >> /etc/ssh/sshd_config
 ClientAliveInterval 600
 PermitRootLogin no
+EOF
 echo "[+] Restarting SSH"
 systemctl restart sshd.service
-EOF
+
 
 echo "[+] Configuring Logon/Logoff and GUI settings"
 backup_file /etc/gdm/custom.conf
@@ -121,9 +123,8 @@ service auditd restart
 
 
 echo "[+] Verifying that OL 9 software repositories have been configured correctly"
-config_check=$(grep gpgcheck /etc/yum.repos.d/*.repo | more
-gpgcheck = 1)
-if [-z "$config_check"]; then
+config_check=$(cat /etc/yum.repos.d/*.repo | grep gpgcheck = 1)
+if [ -z "$config_check" ]; then
   echo "[!] No repositories have 'gpgcheck=1' — applying fix..."
   sudo sed -i 's/^[[:space:]]*gpgcheck[[:space:]]*=.*/gpgcheck=1/g' /etc/yum.repos.d/*.repo
 else
@@ -131,12 +132,12 @@ else
     echo "$config_check"
 fi
 
-localpkg_check=$(grep localpkg_gpgcheck /etc/dnf/dnf.conf 
-localpkg_gpgcheck=1)
-if [-z "$localpkg_check"]; then
+localpkg_check=$(cat /etc/dnf/dnf.conf | grep localpkg_gpgcheck=1)
+if [ -z "$localpkg_check" ]; then
   echo "[!] No repositories have 'localpkg_gpgcheck=1' — applying fix..."
   cat <<EOF >> /etc/dnf/dnf.conf
   localpkg_gpgcheck=1
+  EOF
 else
     echo "[+] localpkg_gpgcheck already set to 1 in one or more repo files:"
     echo "$localpkg_check"
@@ -149,7 +150,7 @@ if ! rpm -q aide &>/dev/null; then
     sudo dnf install -y aide
     echo "[+] Initializing AIDE database..."
     sudo /usr/sbin/aide --init
-    echo "[✓] AIDE installation and initialization complete."
+    echo "[+] AIDE installation and initialization complete."
 else
     echo "[+] AIDE is already installed."
 fi
